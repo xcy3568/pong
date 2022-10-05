@@ -1,0 +1,236 @@
+<html>
+    <head>
+        <script src="pixi.js"></script>
+    </head>
+    <body>
+
+    </body>
+    <script>
+    //创建一个应用app，宽度 400、高度 400的显示区域。
+    var app = new PIXI.Application(800,600);
+    //将应用app的显示区域添加到浏览器中
+    document.body.appendChild(app.view);
+
+    //画中线
+    var line = new PIXI.Graphics();
+    app.stage.addChild(line);
+    line.beginFill(0xFF3300);
+    line.lineStyle(4, 0xffffff, 1);
+    for(var i = 0; i < 40; i ++) {
+        line.moveTo(400, i * 15);
+        line.lineTo(400, i * 15 + 10);
+    }
+    
+    //左侧挡板
+    var leftBlock = new PIXI.Sprite.fromImage("block.jpg");
+    app.stage.addChild(leftBlock);
+    leftBlock.width = 20;
+    leftBlock.height = 100;
+    leftBlock.anchor.x = leftBlock.anchor.y = 0.5;
+    leftBlock.x = 40;
+    leftBlock.y = 300;
+
+    //右侧挡板
+    var rightBlock = new PIXI.Sprite.fromImage("block.jpg");
+    app.stage.addChild(rightBlock);
+    rightBlock.width = 20;
+    rightBlock.height = 100;
+    rightBlock.anchor.x = rightBlock.anchor.y = 0.5;
+    rightBlock.x = 760;
+    rightBlock.y = 300;
+
+    //文字样式
+    var style = {
+        fontFamily: 'Arial',
+        fontSize: 80,
+        fill:'#ffffff',
+    }
+
+    //左侧分数
+    var leftScore = new PIXI.Text("0", style);
+    app.stage.addChild(leftScore);
+    leftScore.anchor.x = leftScore.anchor.y = 0.5;
+    leftScore.x = 200;
+    leftScore.y = 70;
+
+    //右侧分数
+    var rightScore = new PIXI.Text("0", style);
+    app.stage.addChild(rightScore);
+    rightScore.anchor.x = rightScore.anchor.y = 0.5;
+    rightScore.x = 600;
+    rightScore.y = 70;
+
+    //球
+    var ball = new PIXI.Sprite.fromImage("ball.jpg");
+    app.stage.addChild(ball);
+    ball.width = 10;
+    ball.height = 10;
+    ball.anchor.x = ball.anchor.y = 0.5;
+    ball.x = 200;
+    ball.y = 300;
+
+
+    //分数
+    var leftScoreNum = 0;
+    var rightScoreNum = 0;
+
+    //左右挡板移动速度
+    var leftMoveSpeed = 0; 
+    var rightMoveSpeed = 0; 
+    
+    document.onkeydown = function (e) {
+        var e = e || window.event;  //标准化事件对象
+        var keyCode = e.keyCode;
+
+        if(keyCode == 87) { //w
+            leftMoveSpeed = -8;
+        } else if(keyCode == 83) { //s
+            leftMoveSpeed = 8;
+        }
+
+        if(keyCode == 38) { //上
+            rightMoveSpeed = -8;
+        } else if(keyCode == 40) { //下
+            rightMoveSpeed = 8;
+        }
+        console.log(e.keyCode) //上87 下83 左85 右88
+    }
+
+    document.onkeyup = function (e) {
+        var e = e || window.event;  //标准化事件对象
+        var keyCode = e.keyCode;
+
+        if(keyCode == 87) { //w
+            leftMoveSpeed = 0;
+        } else if(keyCode == 83) { //s
+            leftMoveSpeed = 0;
+        }
+
+        if(keyCode == 38) { //上
+            rightMoveSpeed = 0;
+        } else if(keyCode == 40) { //下
+            rightMoveSpeed = 0;
+        }
+    }
+
+
+    var ballSpeed = 3;
+    var ballSpeedAngle = 1/4 * Math.PI;
+    app.ticker.add(animate);
+
+    function animate() {
+        leftBlock.y += leftMoveSpeed;
+        if(leftBlock.y < 50) {
+            leftBlock.y = 50;
+        }
+        if(leftBlock.y > 550) {
+            leftBlock.y = 550;
+        }
+
+        rightBlock.y += rightMoveSpeed;
+        if(rightBlock.y < 50) {
+            rightBlock.y = 50;
+        }
+        if(rightBlock.y > 550) {
+            rightBlock.y = 550;
+        }
+
+
+        var speedX = Math.cos(ballSpeedAngle) * ballSpeed;
+        var speedY = Math.sin(ballSpeedAngle) * ballSpeed;
+
+        ball.x += speedX;
+        ball.y += speedY;
+
+        //碰撞
+        if(ball.y > 600) {
+            ballSpeedAngle = -ballSpeedAngle;
+        }
+        if(ball.y < 0) {
+            ballSpeedAngle = -ballSpeedAngle;
+        }
+        if(ball.x > 800) {
+            //左边得分
+            addScore(1);
+        }
+        if(ball.x < 0) {
+            //右边得分
+            addScore(2);
+            
+        }
+
+        blockCrash(speedX);
+    }
+    
+    var isLeftBlockCrash = false;
+    //挡板与球的碰撞
+    function blockCrash(speedX) {
+        //左挡板
+        if(ball.x < leftBlock.x + leftBlock.width / 2 && ball.x > leftBlock.x - leftBlock.width / 2) {
+            if(ball.y < leftBlock.y + leftBlock.height / 2 && ball.y > leftBlock.y - leftBlock.height / 2) {
+                if(isLeftBlockCrash == false) {
+
+                    if(speedX > 0) {
+                        ballSpeedAngle = -(ballSpeedAngle - Math.PI);
+                    } else {
+                        //回弹角度增益
+                        ballSpeedAngle = (ball.y - leftBlock.y)/50;
+                        ballSpeed = 10;
+                    }
+                    isLeftBlockCrash = true;
+                }
+            } else {
+                isLeftBlockCrash = false;
+            }
+        } else {
+            isLeftBlockCrash = false;
+        }
+
+        //右挡板
+        if(ball.x < rightBlock.x + rightBlock.width / 2 && ball.x > rightBlock.x - rightBlock.width / 2) {
+            if(ball.y < rightBlock.y + rightBlock.height / 2 && ball.y > rightBlock.y - rightBlock.height / 2) {
+                if(isRightBlockCrash == false) {
+
+                    if(speedX < 0) {
+                        ballSpeedAngle = -(ballSpeedAngle - Math.PI);
+                    } else {
+                        //回弹角度增益
+                        ballSpeedAngle = Math.PI - (ball.y - rightBlock.y)/50;
+                        ballSpeed = 10;
+                    }
+                    isRightBlockCrash = true;
+                }
+            } else {
+                isRightBlockCrash = false;
+            }
+        } else {
+            isRightBlockCrash = false;
+        }
+    
+    }
+
+    //记分
+    function addScore(type) {
+        if(type == 1) {
+            leftScoreNum ++;
+            leftScore.text = leftScoreNum;
+            ballSpeedAngle = 0;
+
+        } else {
+            rightScoreNum ++;
+            rightScore.text = rightScoreNum;
+            ballSpeedAngle = Math.PI;
+            
+        }
+
+        //重置小球
+        ball.x = 400;
+        ball.y = 300;
+        ballSpeed = 3;
+
+    }
+
+
+
+    </script>
+</html>
